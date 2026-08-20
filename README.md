@@ -2,7 +2,7 @@
 
 > 一款面向 Windows 的轻量级本地文件名与内容搜索工具。
 
-[![Version](https://img.shields.io/badge/version-1.6.0-1769d1)](https://github.com/zhangnanydl/wenji-local-search/releases/latest)
+[![Version](https://img.shields.io/badge/version-1.6.1-1769d1)](https://github.com/zhangnanydl/wenji-local-search/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-Windows-0078D4?logo=windows)](https://github.com/zhangnanydl/wenji-local-search/releases/latest)
 [![License](https://img.shields.io/badge/license-MIT-22a06b)](LICENSE)
 
@@ -14,8 +14,8 @@
 
 | 版本 | 适合场景 | 下载 |
 | --- | --- | --- |
-| Windows 安装版 | 支持选择安装目录、创建桌面快捷方式 | [下载 Wenji-Setup-1.6.0.exe](https://github.com/zhangnanydl/wenji-local-search/releases/latest/download/Wenji-Setup-1.6.0.exe) |
-| Windows 免安装版 | 下载后直接运行，不写入安装目录 | [下载 Wenji-Portable-1.6.0.exe](https://github.com/zhangnanydl/wenji-local-search/releases/latest/download/Wenji-Portable-1.6.0.exe) |
+| Windows 安装版 | 支持选择安装目录、创建桌面快捷方式 | [下载 Wenji-Setup-1.6.1.exe](https://github.com/zhangnanydl/wenji-local-search/releases/latest/download/Wenji-Setup-1.6.1.exe) |
+| Windows 免安装版 | 下载后直接运行，不写入安装目录 | [下载 Wenji-Portable-1.6.1.exe](https://github.com/zhangnanydl/wenji-local-search/releases/latest/download/Wenji-Portable-1.6.1.exe) |
 
 也可以前往 [Releases 页面](https://github.com/zhangnanydl/wenji-local-search/releases/latest) 查看版本说明和全部附件。
 

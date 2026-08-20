@@ -418,29 +418,33 @@ function matchesDateFilter(document, dateRange) {
   return modified >= now - (ranges[dateRange] || Number.MAX_SAFE_INTEGER)
 }
 
-function searchDocuments(query, filters = {}) {
+async function searchDocuments(query, filters = {}) {
   const started = performance.now(); const q = query.trim()
   if (!q) return { results: [], elapsed: 0, total: 0, syntax: { terms: [] } }
   const tokens = parseSearchQuery(q); const positive = tokens.filter(token => !token.exclude); const negative = tokens.filter(token => token.exclude)
   const highlightTerms = [...new Set(positive.filter(token => token.scope === 'any' || token.scope === 'name' || token.scope === 'content').map(token => token.value))]
+  const nameTokens = positive.filter(token => token.scope === 'any' || token.scope === 'name')
+  const contentTokens = positive.filter(token => token.scope === 'any' || token.scope === 'content')
   const matchesFilters = document => matchesTypeFilter(document, filters.type) && matchesDateFilter(document, filters.dateRange)
   const countHits = (text, term) => {
     let count = 0; let position = 0
     while ((position = text.indexOf(term, position)) >= 0) { count++; position += Math.max(term.length, 1) }
     return count
   }
-  const ranked = state.documents.filter(matchesFilters).map(document => {
+  const ranked = []
+  for (let index = 0; index < state.documents.length; index++) {
+    if (index && index % 750 === 0) await new Promise(resolve => setImmediate(resolve))
+    const document = state.documents[index]
+    if (!matchesFilters(document)) continue
     const name = document.name.toLocaleLowerCase(); const content = document.content.toLocaleLowerCase()
-    if (!positive.every(token => tokenMatches(token, document, name, content)) || negative.some(token => tokenMatches(token, document, name, content))) return null
-    const nameTokens = positive.filter(token => token.scope === 'any' || token.scope === 'name')
-    const contentTokens = positive.filter(token => token.scope === 'any' || token.scope === 'content')
+    if (!positive.every(token => tokenMatches(token, document, name, content)) || negative.some(token => tokenMatches(token, document, name, content))) continue
     const nameMatchesAll = !contentTokens.some(token => token.scope === 'content') && nameTokens.every(token => name.includes(token.value))
     const nameMatched = nameTokens.some(token => name.includes(token.value)); const contentMatched = contentTokens.some(token => content.includes(token.value))
-    if (filters.source === 'name' && !nameMatched) return null
-    if (filters.source === 'content' && !contentMatched) return null
+    if (filters.source === 'name' && !nameMatched) continue
+    if (filters.source === 'content' && !contentMatched) continue
     let score = nameMatchesAll ? 100 : 0
     highlightTerms.forEach(term => { score += countHits(name, term) * 12 + countHits(content, term) })
-    return {
+    ranked.push({
       ...document,
       location: contentMatched ? document.location : { kind: 'filename', label: '文件名匹配' },
       nameMatched,
@@ -450,18 +454,23 @@ function searchDocuments(query, filters = {}) {
       snippet: contentMatched ? makeSnippet(document.content, highlightTerms) : '关键词命中文件名，可在右侧查看文件信息。',
       query,
       highlightTerms
-    }
-  }).filter(Boolean)
+    })
+  }
 
   const results = []; const filenameFiles = new Set()
-  for (const result of ranked) {
+  for (let index = 0; index < ranked.length; index++) {
+    if (index && index % 1500 === 0) await new Promise(resolve => setImmediate(resolve))
+    const result = ranked[index]
     if (result.nameMatchesAll) {
       if (filenameFiles.has(result.fileId)) continue
       filenameFiles.add(result.fileId)
     }
     results.push(result)
   }
-  for (const file of state.files.filter(matchesFilters)) {
+  for (let index = 0; index < state.files.length; index++) {
+    if (index && index % 1000 === 0) await new Promise(resolve => setImmediate(resolve))
+    const file = state.files[index]
+    if (!matchesFilters(file)) continue
     const name = file.name.toLocaleLowerCase(); const content = ''
     if (filenameFiles.has(file.id) || !positive.every(token => tokenMatches(token, file, name, content)) || negative.some(token => tokenMatches(token, file, name, content))) continue
     const nameMatched = positive.some(token => (token.scope === 'any' || token.scope === 'name') && name.includes(token.value))
@@ -488,6 +497,7 @@ function searchDocuments(query, filters = {}) {
     size: (a, b) => (b.size || 0) - (a.size || 0) || b.score - a.score,
     relevance: (a, b) => b.score - a.score || b.modified.localeCompare(a.modified)
   }
+  await new Promise(resolve => setImmediate(resolve))
   results.sort(sorters[filters.sort] || sorters.relevance)
   const total = results.length
   return { results: results.slice(0, 500), elapsed: Math.max(1, Math.round(performance.now() - started)), total, syntax: { terms: highlightTerms, tokens } }

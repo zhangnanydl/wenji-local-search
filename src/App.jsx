@@ -68,6 +68,16 @@ function ResultRow({ result, selected, onSelect, onOpen, onContextMenu }) {
   </button>
 }
 
+function SearchLoading({ query }) {
+  return <div className="search-loading" role="status" aria-live="polite" aria-label="正在搜索">
+    <div className="search-loading-line"><span/></div>
+    <div className="search-loading-copy"><div className="search-pulse-icon"><Search size={19}/><i/></div><div><strong>正在本地索引中查找</strong><span>“{query}” · 请稍候</span></div></div>
+    <div className="search-skeletons" aria-hidden="true">
+      {[0, 1, 2].map(index => <div className="search-skeleton" key={index}><div className="skeleton-icon"/><div className="skeleton-body"><i/><i/><i/></div></div>)}
+    </div>
+  </div>
+}
+
 function MediaPreview({ result }) {
   const url = window.wenji.mediaUrl(result.path)
   if (result.type === 'image') return <div className="media-preview image-preview"><img src={url} alt={result.name}/></div>
@@ -123,7 +133,7 @@ export default function App() {
   const [appState, setAppState] = useState(emptyState); const [query, setQuery] = useState(''); const [type, setType] = useState('all')
   const [source, setSource] = useState('all'); const [dateRange, setDateRange] = useState('all'); const [sort, setSort] = useState('relevance')
   const [searchData, setSearchData] = useState({ results: [], elapsed: 0, total: 0 }); const [selectedId, setSelectedId] = useState(null)
-  const [progress, setProgress] = useState({ phase: 'idle', done: 0, total: 0, current: '' }); const [searched, setSearched] = useState(false); const [searching, setSearching] = useState(false); const [detailOpen, setDetailOpen] = useState(true)
+  const [progress, setProgress] = useState({ phase: 'idle', done: 0, total: 0, current: '' }); const [searched, setSearched] = useState(false); const [searching, setSearching] = useState(false); const [showSearchProgress, setShowSearchProgress] = useState(false); const [detailOpen, setDetailOpen] = useState(true)
   const [opening, setOpening] = useState(null); const [toast, setToast] = useState(null); const [showIndexDialog, setShowIndexDialog] = useState(false)
   const inputRef = useRef(null); const progressHiddenRef = useRef(false); const searchRequestRef = useRef(0)
   const resultMap = useMemo(() => new Map(searchData.results.map(result => [result.id, result])), [searchData.results])
@@ -131,6 +141,11 @@ export default function App() {
   const refreshState = useCallback(async () => setAppState(await window.wenji.getState()), [])
   const notify = useCallback((message, type = 'success') => setToast({ message, type, id: Date.now() }), [])
   useEffect(() => { if (!toast) return; const id = setTimeout(() => setToast(null), 3600); return () => clearTimeout(id) }, [toast])
+  useEffect(() => {
+    if (!searching) { setShowSearchProgress(false); return }
+    const id = setTimeout(() => setShowSearchProgress(true), 160)
+    return () => clearTimeout(id)
+  }, [searching])
   useEffect(() => { refreshState(); return window.wenji.onIndexProgress(async value => {
     setProgress(value)
     const active = value.phase === 'scanning' || value.phase === 'indexing'
@@ -191,14 +206,14 @@ export default function App() {
     <header className="titlebar"><div className="brand"><div className="brand-mark"><Search size={18}/></div><strong>文迹</strong><span>本地文件搜索</span></div><div className="privacy"><span className="status-dot"/>索引仅保存在本机</div></header>
     <Sidebar state={appState} progress={progress} onAdd={addFolder} onRemove={removeFolder} onRebuild={rebuild}/>
     <main className={`workspace ${detailOpen ? '' : 'detail-closed'}`}>
-      <section className="search-zone"><form onSubmit={e => { e.preventDefault(); runSearch() }}><div className="search-input"><Search size={22}/><input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} placeholder={'搜索文件名或内容，例如 name:报告 -作废'} aria-label="搜索文件名或文件内容"/><span><Keyboard size={14}/> Ctrl K</span>{query && <button type="button" onClick={clearSearch} aria-label="清空搜索"><X size={17}/></button>}</div><button className="search-button" disabled={searching || !query.trim()}>{searching ? <RefreshCw size={19} className="spin"/> : <Search size={19}/>} 搜索</button></form>
+      <section className="search-zone"><form onSubmit={e => { e.preventDefault(); runSearch() }}><div className="search-input"><Search size={22}/><input ref={inputRef} value={query} onChange={e => setQuery(e.target.value)} placeholder={'搜索文件名或内容，例如 name:报告 -作废'} aria-label="搜索文件名或文件内容"/><span><Keyboard size={14}/> Ctrl K</span>{query && <button type="button" onClick={clearSearch} aria-label="清空搜索"><X size={17}/></button>}</div><button className="search-button" disabled={searching || !query.trim()}>{searching ? <RefreshCw size={19} className="spin"/> : <Search size={19}/>} {searching ? '检索中' : '搜索'}</button></form>
         <div className="filter-row"><div className="filters">{types.map(t => <button key={t.key} className={type === t.key ? 'active' : ''} onClick={() => setType(t.key)}>{t.label}</button>)}</div><div className="advanced-filters"><label><span>范围</span><select aria-label="匹配范围" value={source} onChange={event => setSource(event.target.value)}>{sourceOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label><label><span>时间</span><select aria-label="修改时间" value={dateRange} onChange={event => setDateRange(event.target.value)}>{dateOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label><label><span>排序</span><select aria-label="结果排序" value={sort} onChange={event => setSort(event.target.value)}>{sortOptions.map(option => <option key={option.key} value={option.key}>{option.label}</option>)}</select></label><SyntaxHelp/></div></div>
       </section>
-      <section className="results"><div className="results-head"><div>{searched ? <><strong>找到 {searchData.total} 个结果</strong><span>· {searchData.elapsed} 毫秒</span></> : <><strong>搜索结果</strong><span>文件名与内容 · 支持 Office、WPS、代码、文本和媒体文件</span></>}</div>{selected && <button className="toggle-detail" onClick={() => setDetailOpen(v => !v)} aria-label={detailOpen ? '收起详情' : '展开详情'}>{detailOpen ? <PanelRightClose size={17}/> : <PanelRightOpen size={17}/>}</button>}</div>
+      <section className="results"><div className="results-head"><div>{showSearchProgress ? <><strong>正在检索</strong><span>正在匹配文件名与内容…</span></> : searched ? <><strong>找到 {searchData.total} 个结果</strong><span>· {searchData.elapsed} 毫秒</span></> : <><strong>搜索结果</strong><span>文件名与内容 · 支持 Office、WPS、代码、文本和媒体文件</span></>}</div>{selected && <button className="toggle-detail" onClick={() => setDetailOpen(v => !v)} aria-label={detailOpen ? '收起详情' : '展开详情'}>{detailOpen ? <PanelRightClose size={17}/> : <PanelRightOpen size={17}/>}</button>}</div>
         <div className="result-list">
-          {searchData.results.map(r => <ResultRow key={r.id} result={r} selected={r.id === selectedId} onSelect={() => { setSelectedId(r.id); setDetailOpen(true) }} onOpen={() => { setSelectedId(r.id); openResult(r, false) }} onContextMenu={event => { event.preventDefault(); setSelectedId(r.id); setDetailOpen(true); window.wenji.showContextMenu(r) }}/>) }
-          {!searched && <div className="welcome"><div className="welcome-icon"><Search size={32}/></div><h2>{appState.roots.length ? '搜索文件名和内容' : '先添加一个搜索文件夹'}</h2><p>{appState.roots.length ? '输入关键词即可自动检索，并显示命中的文件名或原文位置。' : '文迹会在本机建立索引，文件内容不会上传。'}</p>{!appState.roots.length && <button className="primary" onClick={addFolder}><FolderPlus size={17}/>添加文件夹</button>}</div>}
-          {searched && !searchData.results.length && <div className="welcome"><div className="welcome-icon"><FileText size={31}/></div><h2>没有找到“{query}”</h2><p>尝试更短的关键词，或切换到“全部”文件类型。</p></div>}
+          {showSearchProgress ? <SearchLoading query={query}/> : <>{searchData.results.map(r => <ResultRow key={r.id} result={r} selected={r.id === selectedId} onSelect={() => { setSelectedId(r.id); setDetailOpen(true) }} onOpen={() => { setSelectedId(r.id); openResult(r, false) }} onContextMenu={event => { event.preventDefault(); setSelectedId(r.id); setDetailOpen(true); window.wenji.showContextMenu(r) }}/>) }
+            {!searched && <div className="welcome"><div className="welcome-icon"><Search size={32}/></div><h2>{appState.roots.length ? '搜索文件名和内容' : '先添加一个搜索文件夹'}</h2><p>{appState.roots.length ? '输入关键词即可自动检索，并显示命中的文件名或原文位置。' : '文迹会在本机建立索引，文件内容不会上传。'}</p>{!appState.roots.length && <button className="primary" onClick={addFolder}><FolderPlus size={17}/>添加文件夹</button>}</div>}
+            {searched && !searchData.results.length && <div className="welcome"><div className="welcome-icon"><FileText size={31}/></div><h2>没有找到“{query}”</h2><p>尝试更短的关键词，或切换到“全部”文件类型。</p></div>}</>}
         </div>
       </section>
       {detailOpen && <DetailPane result={selected} onClose={() => setDetailOpen(false)} onOpen={(locate) => openResult(selected, locate)} onReveal={revealResult} onCopy={copyPath} opening={opening}/>} 
