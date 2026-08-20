@@ -17,16 +17,21 @@ const CODE_EXTENSIONS = new Set([
   '.less', '.xml', '.json', '.jsonc', '.yaml', '.yml', '.toml', '.ini', '.cfg', '.conf', '.properties', '.env', '.asm', '.s', '.dockerfile'
 ])
 const TEXT_EXTENSIONS = new Set(['.txt', '.md', '.markdown', '.log', '.text', '.rst', '.adoc', '.tex', '.csv', '.tsv', '.lrc'])
+const IMAGE_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg', '.ico', '.avif', '.tif', '.tiff', '.heic'])
+const AUDIO_EXTENSIONS = new Set(['.mp3', '.wav', '.flac', '.m4a', '.aac', '.ogg', '.oga', '.wma', '.opus'])
+const VIDEO_EXTENSIONS = new Set(['.mp4', '.m4v', '.mov', '.avi', '.mkv', '.webm', '.wmv', '.flv', '.mpeg', '.mpg', '.ts'])
 const SPECIAL_TEXT_FILES = new Set(['.gitignore', '.gitattributes', '.editorconfig', '.env', '.npmrc', '.yarnrc', 'dockerfile', 'makefile', 'cmakelists.txt', 'license', 'readme'])
 const WPS_EXTENSIONS = new Set(['.wps', '.wpt', '.et', '.ett', '.dps', '.dpt'])
-const SUPPORTED = new Set([...WORD_EXTENSIONS, ...EXCEL_EXTENSIONS, ...PPT_EXTENSIONS, ...CODE_EXTENSIONS, ...TEXT_EXTENSIONS])
+const MEDIA_TYPES = new Set(['image', 'audio', 'video'])
+const SUPPORTED = new Set([...WORD_EXTENSIONS, ...EXCEL_EXTENSIONS, ...PPT_EXTENSIONS, ...CODE_EXTENSIONS, ...TEXT_EXTENSIONS, ...IMAGE_EXTENSIONS, ...AUDIO_EXTENSIONS, ...VIDEO_EXTENSIONS])
 const TYPE_MAP = Object.fromEntries([
   ...[...WORD_EXTENSIONS].map(ext => [ext, 'word']), ...[...EXCEL_EXTENSIONS].map(ext => [ext, 'excel']), ...[...PPT_EXTENSIONS].map(ext => [ext, 'ppt']),
-  ...[...CODE_EXTENSIONS].map(ext => [ext, 'code']), ...[...TEXT_EXTENSIONS].map(ext => [ext, ext === '.md' || ext === '.markdown' ? 'md' : 'txt'])
+  ...[...CODE_EXTENSIONS].map(ext => [ext, 'code']), ...[...TEXT_EXTENSIONS].map(ext => [ext, ext === '.md' || ext === '.markdown' ? 'md' : 'txt']),
+  ...[...IMAGE_EXTENSIONS].map(ext => [ext, 'image']), ...[...AUDIO_EXTENSIONS].map(ext => [ext, 'audio']), ...[...VIDEO_EXTENSIONS].map(ext => [ext, 'video'])
 ])
 const SKIP_DIRS = new Set(['node_modules', '.git', '.svn', '.hg', '__pycache__', '.venv', 'venv'])
 const MAX_TEXT_BYTES = 32 * 1024 * 1024
-const INDEX_VERSION = 4
+const INDEX_VERSION = 5
 let mainWindow
 let tray
 let isQuitting = false
@@ -221,6 +226,7 @@ async function extractLegacyOffice(filePath, type) {
 
 async function extractFile(filePath) {
   const ext = path.extname(filePath).toLowerCase(); const type = fileType(filePath)
+  if (MEDIA_TYPES.has(type)) return []
   const buffer = await fs.readFile(filePath)
   if (type === 'code' || type === 'txt' || type === 'md') return chunkLines(decodeTextBuffer(buffer))
   if (buffer[0] === 0x50 && buffer[1] === 0x4b) {
@@ -393,6 +399,7 @@ function matchesTypeFilter(document, type) {
   if (type === 'office') return document.type === 'word' || document.type === 'excel' || document.type === 'ppt'
   if (type === 'wps') return WPS_EXTENSIONS.has(document.ext)
   if (type === 'text') return document.type === 'txt' || document.type === 'md'
+  if (type === 'media') return MEDIA_TYPES.has(document.type)
   return document.type === type
 }
 

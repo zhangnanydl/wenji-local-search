@@ -1,13 +1,14 @@
 # 文迹 Wenji
 
-文迹是一款面向 Windows 的本地文件名与内容搜索工具。它在电脑上建立全文索引，支持 Office、WPS、代码和常见文本文件；索引与文件内容不会上传到网络。
+文迹是一款面向 Windows 的本地文件名与内容搜索工具。它在电脑上建立全文索引，支持 Office、WPS、代码、常见文本和媒体文件；索引与文件内容不会上传到网络。
 
 ## 功能
 
 - 同时搜索文件名和文件内容，显示命中片段与位置。
-- Word、Excel、PowerPoint 及 WPS 常用格式。
+- Word、Excel、PowerPoint 及 WPS 常用格式，包括 `.wps/.wpt`、`.et/.ett`、`.dps/.dpt`。
 - Python、Java、JavaScript、TypeScript、C/C++、C#、Go、Rust、SQL 等代码文件。
 - TXT、Markdown、Log、JSON、YAML、XML、INI、TOML、CSV 等文本文件。
+- 图片、音频和视频可按文件名、扩展名、日期与大小检索，并在详情中预览或播放。
 - 文件新增、修改或删除后自动增量更新索引。
 - 按文件类型、命中范围、修改时间筛选，并按相关度、时间、名称或大小排序。
 - 右键打开、定位、复制路径，以及系统托盘和全局快捷键。
@@ -18,11 +19,13 @@
 "设备检修" -作废
 name:报告 ext:docx
 content:报警 type:office
+type:image
 ```
 
 - 双引号表示精确短语。
 - `-关键词` 排除包含该关键词的结果。
 - 支持 `name:`、`content:`、`ext:`、`type:` 限定范围。
+- 媒体类型支持 `type:image`、`type:audio`、`type:video`；当前不对图片做 OCR，也不转写音视频内容。
 
 ## 本地开发
 
