@@ -1,0 +1,64 @@
+{
+  "name": "wenji-local-search",
+  "version": "1.5.0",
+  "private": true,
+  "description": "文迹 - Windows 本地文件名与内容搜索工具",
+  "author": "zhangnanydl",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/zhangnanydl/wenji-local-search.git"
+  },
+  "homepage": "https://github.com/zhangnanydl/wenji-local-search#readme",
+  "bugs": {
+    "url": "https://github.com/zhangnanydl/wenji-local-search/issues"
+  },
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
+    "build": "vite build",
+    "start": "electron .",
+    "dist": "npm run build && electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "iconv-lite": "^0.6.3",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.468.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "vite": "^6.0.5",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "electron": "^34.0.0",
+    "electron-builder": "^25.1.8",
+    "wait-on": "^8.0.2"
+  },
+  "build": {
+    "appId": "io.github.wenji.local-search",
+    "productName": "文迹",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "build/icon.png",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true
+    }
+  }
+}

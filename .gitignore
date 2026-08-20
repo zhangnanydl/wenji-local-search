@@ -1,0 +1,15 @@
+node_modules/
+dist/
+release/
+.vite/
+*.log
+.env
+.env.*
+!.env.example
+design/
+.DS_Store
+Thumbs.db
+wenji-index.json
+wenji-settings.json
+xunwen-index.json
+xunwen-settings.json
